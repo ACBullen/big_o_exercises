@@ -155,8 +155,6 @@ class StackQueue
     @store_dequeue.empty? && @store_enqueue.empty?
   end
 
-
-
 end
 
 def much_beterer_max_widow(arr, w)
