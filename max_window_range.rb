@@ -1,3 +1,5 @@
+require 'byebug'
+
 def niave_max_widow(arr, w)
   i = 0
   cur_largest_max = 0
@@ -11,6 +13,8 @@ def niave_max_widow(arr, w)
 
   cur_largest_max
 end
+
+
 
 class MyQueue
   def initialize
@@ -58,7 +62,7 @@ class MyStack
   end
 
   def peek
-    @store.dup
+    @store.last
   end
 
   def empty?
@@ -69,39 +73,73 @@ end
 class StackQueue
   def initialize
     @store_dequeue = MyStack.new
-    @dq_max = nil
-    @dq_min = nil
     @store_enqueue = MyStack.new
-    @nq_max = nil
-    @nq_max = nil
 
   end
 
   def max
-    unless @dq_max.nil? || @nq_max.nil?
-      return @dq_max if @dq_max > @nq_max
-      return @nq_max if @nq_max > @dq_max
+    dq_peek_info = @store_dequeue.peek
+    eq_peek_info = @store_enqueue.peek
+
+    if dq_peek_info.nil?
+     #  debugger
+      eq_peek_info[:max_val]
+    elsif eq_peek_info.nil?
+      dq_peek_info[:max_val]
+    else
+      dqmax = dq_peek_info[:max_val]
+      nqmax = eq_peek_info[:max_val]
+      dqmax > nqmax ? dqmax : nqmax
     end
-    return @nq_max if @dq_max.nil?
-    return @dq_max if @nq_max.nil?
   end
 
+
+   def min
+     dq_peek_info = @store_dequeue.peek
+     eq_peek_info = @store_enqueue.peek
+     if dq_peek_info.nil?
+      #  debugger
+       eq_peek_info[:min_val]
+     elsif eq_peek_info.nil?
+       dq_peek_info[:min_val]
+     else
+       dqmin = dq_peek_info[:min_val]
+       nqmin = eq_peek_info[:min_val]
+
+       dqmin < nqmin ? dqmin : nqmin
+     end
+   end
+
   def enqueue(item)
-    @nq_min = item if @nq_min.nil? || @nq_min > item
-    @nq_max = item if @nq_max.nil? || @nq_max < item
-    @store_enqueue.push(item)
+    peek_info = @store_enqueue.peek
+    item_hash = Hash.new
+    if peek_info.nil?
+      item_hash[:min_val] = item
+      item_hash[:max_val] = item
+    else
+      peek_info[:min_val] > item ? item_hash[:min_val] = item : item_hash[:min_val] = peek_info[:min_val]
+      peek_info[:max_val] < item ? item_hash[:max_val] = item : item_hash[:max_val] = peek_info[:max_val]
+    end
+    item_hash[:val] = item
+
+    @store_enqueue.push(item_hash)
+
   end
 
   def dequeue
     if @store_dequeue.empty?
       until @store_enqueue.empty?
-        shifting_to_dq = @store_enqueue.pop
-        @dq_max = shifting_to_dq if @dq_max.nil? || shifting_to_dq > @dq_max
-        @dq_min = shifting_to_dq if @dq_min.nil? || shifting_to_dq < @dq_min
-        @store_dequeue.push(shifting_to_dq)
+        item_hash = @store_enqueue.pop
+        peek_info = @store_dequeue.peek
+        if peek_info.nil?
+          item_hash[:min_val] = item_hash[:val]
+          item_hash[:max_val] = item_hash[:val]
+        else
+          peek_info[:min_val] > item_hash[:val] ? item_hash[:min_val] = item_hash[:val] : item_hash[:min_val] = peek_info[:min_val]
+          peek_info[:max_val] < item_hash[:val] ? item_hash[:max_val] = item_hash[:val] : item_hash[:max_val] = peek_info[:max_val]
+        end
+        @store_dequeue.push(item_hash)
       end
-      @nq_max = nil
-      @nq_min = nil
       @store_dequeue.pop
     else
 
@@ -121,8 +159,23 @@ class StackQueue
 
 end
 
+def much_beterer_max_widow(arr, w)
+  window_s1 = StackQueue.new
+  until window_s1.size == w
+    window_s1.enqueue(arr.shift)
+  end
 
-# p niave_max_widow([1, 0, 2, 5, 4, 8], 2) == 4 # 4, 8
-# p niave_max_widow([1, 0, 2, 5, 4, 8], 3) == 5 # 0, 2, 5
-# p niave_max_widow([1, 0, 2, 5, 4, 8], 4) == 6 # 2, 5, 4, 8
-# p niave_max_widow([1, 3, 2, 5, 4, 8], 5) == 6
+  max_val = window_s1.max
+  min_val = window_s1.min
+  result = max_val - min_val
+  until arr.empty?
+    window_s1.dequeue
+    window_s1.enqueue(arr.shift)
+    max_val = window_s1.max
+    min_val = window_s1.min
+    cur_largest_diff = max_val - min_val
+    result = cur_largest_diff if cur_largest_diff > result
+  end
+
+  result
+end
